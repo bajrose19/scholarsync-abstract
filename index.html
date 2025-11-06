@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScholarSync × HESS Content Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'nyu-violet': '#57068c',
+            'reel-hook': '#FBBF24',
+            'reel-core': '#3B82F6',
+            'reel-impact': '#10B981'
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    textarea::-webkit-scrollbar, .output-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+    textarea::-webkit-scrollbar-thumb, .output-scroll::-webkit-scrollbar-thumb {
+      background: #a78bfa;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-black text-white min-h-screen p-6">
+  <header class="text-center mb-12">
+    <h1 class="text-4xl font-bold tracking-tight text-indigo-300 drop-shadow-md">
+      ScholarSync <span class="text-gray-300 text-2xl">× HESS Content Studio</span>
+    </h1>
+    <p class="text-gray-400 mt-2">Transforming research into captivating, verified science videos</p>
+  </header>
+
+  <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Input Column -->
+    <section class="lg:col-span-1 bg-slate-800/60 backdrop-blur-xl p-6 rounded-2xl shadow-xl">
+      <h2 class="text-xl font-semibold text-indigo-200 mb-4 border-b border-indigo-400 pb-2">1. Input & Settings</h2>
+
+      <label class="block text-sm mb-2 text-gray-300">Translate Script To:</label>
+      <select id="languageSelect" class="w-full mb-4 p-3 bg-slate-900 border border-slate-700 rounded-lg text-gray-200 focus:ring-2 focus:ring-indigo-500">
+        <option value="English">English (Default)</option>
+        <option value="Spanish">Spanish</option>
+        <option value="Mandarin">Mandarin</option>
+        <option value="French">French</option>
+      </select>
+
+      <label class="block text-sm mb-2 text-gray-300">Paste Academic Text:</label>
+      <textarea id="paperInput" rows="12" placeholder="Paste the scientific text or abstract here..."
+        class="w-full p-4 rounded-lg bg-slate-900 text-gray-200 border border-slate-700 focus:ring-2 focus:ring-indigo-500 mb-4"></textarea>
+
+      <button id="generateBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 font-semibold py-3 rounded-lg transition flex items-center justify-center text-white disabled:bg-gray-500">
+        <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Generate HESS Script
+      </button>
+
+      <p id="errorMsg" class="hidden text-sm text-red-500 mt-3 text-center">Error generating script. Please try again.</p>
+    </section>
+
+    <!-- Output Column -->
+    <section class="lg:col-span-2 bg-slate-800/60 backdrop-blur-xl p-6 rounded-2xl shadow-xl">
+      <h2 class="text-xl font-semibold text-indigo-200 mb-4 border-b border-indigo-400 pb-2">2. Generated ScholarSync Script</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div id="timetable" class="md:col-span-3 bg-slate-900 p-4 rounded-xl hidden md:block">
+          <h3 class="font-semibold text-indigo-300 mb-2">Reel Timetable</h3>
+          <div id="timetable-content" class="text-sm text-gray-300">Awaiting generation...</div>
+        </div>
+
+        <div id="scriptOutput" class="md:col-span-9 bg-slate-900 p-5 rounded-xl border border-slate-700 min-h-[400px]">
+          <p id="placeholder" class="text-gray-400 italic text-center py-16 text-lg">Your HESS-standard viral script will appear here.</p>
+          <div id="generatedContent" class="hidden output-scroll max-h-[600px] overflow-y-auto space-y-6"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end mt-4">
+        <button id="copyBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-900 text-sm font-semibold py-3 px-6 rounded-lg shadow-md disabled:opacity-50" disabled>Copy Script</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="text-center text-gray-400 text-sm mt-12">
+    © 2025 ScholarSync × HESS — Built at NYU Hemmes Engineering & Science Society
+  </footer>
+
+  <script>
+    const languageSelect = document.getElementById('languageSelect');
+    const input = document.getElementById('paperInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const generatedContent = document.getElementById('generatedContent');
+    const placeholder = document.getElementById('placeholder');
+    const spinner = document.getElementById('spinner');
+    const errorMsg = document.getElementById('errorMsg');
+    const copyBtn = document.getElementById('copyBtn');
+    const timetableContent = document.getElementById('timetable-content');
+
+    const API_KEY = ""; // Insert API key here only if testing locally
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+
+    const HESS_STRUCTURE = [
+      { id: 'hook', title: '1. The Hook', time: '0 - 5s', text_color: 'text-yellow-400' },
+      { id: 'context', title: '2. The Context', time: '5 - 15s', text_color: 'text-blue-400' },
+      { id: 'science', title: '3. The Science', time: '15 - 60s', text_color: 'text-purple-400' },
+      { id: 'sowhat', title: '4. The So What?', time: '60 - 75s', text_color: 'text-emerald-400' },
+      { id: 'cta', title: '5. The CTA', time: '75 - 90s', text_color: 'text-gray-400' },
+    ];
+
+    async function exponentialBackoffFetch(url, options, maxRetries = 3) {
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const res = await fetch(url, options);
+          if (res.ok) return res.json();
+          if (res.status === 429 && i < maxRetries - 1) {
+            await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+          } else throw new Error(await res.text());
+        } catch (err) {
+          if (i === maxRetries - 1) throw err;
+          await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+        }
+      }
+    }
+
+    function buildPrompt(language) {
+      return `You are ScholarSync, an NYU science communicator applying the HESS 5-Point Formula.
+Output language: ${language}.
+Use the structure:
+1. Hook
+2. Context
+3. Science
+4. So What?
+5. CTA
+Each section 20-40 words, total under 180 words.`;
+    }
+
+    async function summarizePaper() {
+      const paperText = input.value.trim();
+      const language = languageSelect.value;
+      if (!paperText) {
+        errorMsg.textContent = "Please paste academic text.";
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      generateBtn.disabled = true;
+      spinner.classList.remove('hidden');
+      errorMsg.classList.add('hidden');
+      placeholder.classList.add('hidden');
+      generatedContent.classList.remove('hidden');
+      generatedContent.innerHTML = `<p class='text-center text-gray-400 italic py-10'>Generating in ${language}...</p>`;
+      timetableContent.textContent = "Processing...";
+
+      const payload = {
+        contents: [{ parts: [{ text: paperText }] }],
+        systemInstruction: { parts: [{ text: buildPrompt(language) }] },
+        generationConfig: { temperature: 0.25 }
+      };
+
+      try {
+        const result = await exponentialBackoffFetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) renderOutput(text);
+      } catch (err) {
+        errorMsg.textContent = "Error generating script.";
+        errorMsg.classList.remove('hidden');
+      } finally {
+        spinner.classList.add('hidden');
+        generateBtn.disabled = false;
+      }
+    }
+
+    function renderOutput(text) {
+      generatedContent.innerHTML = '';
+      timetableContent.innerHTML = '';
+      const sections = text.split(/###|\d\./).filter(s => s.trim());
+      HESS_STRUCTURE.forEach((s, i) => {
+        const section = sections[i] || "";
+        generatedContent.innerHTML += `
+          <div class="border-l-4 border-slate-500 bg-slate-950 p-4 rounded-lg">
+            <h4 class="font-bold ${s.text_color}">${s.title}</h4>
+            <p class="text-gray-300">${section.trim()}</p>
+          </div>`;
+        timetableContent.innerHTML += `<div class="flex justify-between text-sm py-1"><span>${s.title.replace(/\d\.\s/, '')}</span><span>${s.time}</span></div>`;
+      });
+      copyBtn.disabled = false;
+    }
+
+    generateBtn.addEventListener('click', summarizePaper);
+    copyBtn.addEventListener('click', () => {
+      const text = generatedContent.innerText;
+      navigator.clipboard.writeText(text);
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => copyBtn.textContent = "Copy Script", 1500);
+    });
+  </script>
+</body>
+</html>
